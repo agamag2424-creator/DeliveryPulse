@@ -1,0 +1,395 @@
+"use client";
+
+import { useState } from "react";
+
+import { type ReportInput } from "@/types/report";
+
+const sampleReportInputState: ReportInput = {
+  projectData: {
+    projectName: "CloudBridge — Enterprise MuleSoft Integration Platform",
+    clientName: "NorthBridge Financial Services",
+    reportingPeriodFrom: "2026-04-07",
+    reportingPeriodTo: "2026-04-13",
+    deliveryPMName: "Agam Agrawwal",
+    currentProjectPhase: "Build",
+  },
+  healthData: {
+    currentBudgetBurnPercent: 72,
+    currentScopeCompletionPercent: 55,
+    currentScheduleHealthPercent: 61,
+    activeWorkstreams: 4,
+    teamSize: 18,
+  },
+  healthHistory: [
+    {
+      weekLabel: "W10",
+      budgetBurnPercent: 52,
+      scopeCompletionPercent: 32,
+      scheduleHealthPercent: 88,
+    },
+    {
+      weekLabel: "W11",
+      budgetBurnPercent: 58,
+      scopeCompletionPercent: 40,
+      scheduleHealthPercent: 82,
+    },
+    {
+      weekLabel: "W12",
+      budgetBurnPercent: 65,
+      scopeCompletionPercent: 48,
+      scheduleHealthPercent: 74,
+    },
+    {
+      weekLabel: "W13",
+      budgetBurnPercent: 69,
+      scopeCompletionPercent: 52,
+      scheduleHealthPercent: 65,
+    },
+    {
+      weekLabel: "W14",
+      budgetBurnPercent: 72,
+      scopeCompletionPercent: 55,
+      scheduleHealthPercent: 61,
+    },
+  ],
+  milestones: [
+    {
+      milestoneName: "API Design Approval",
+      baselineDate: "2026-04-01",
+      forecastDate: "2026-04-01",
+      status: "Complete",
+      owner: "Agam Agrawwal",
+    },
+    {
+      milestoneName: "Integration Layer Build",
+      baselineDate: "2026-04-08",
+      forecastDate: "2026-04-08",
+      status: "Complete",
+      owner: "API Layer Lead",
+    },
+    {
+      milestoneName: "Data Migration Ready",
+      baselineDate: "2026-04-12",
+      forecastDate: "2026-04-17",
+      status: "Delayed",
+      owner: "Data Migration Lead",
+    },
+    {
+      milestoneName: "UAT Entry",
+      baselineDate: "2026-04-14",
+      forecastDate: "2026-04-21",
+      status: "Delayed",
+      owner: "QA Lead",
+    },
+    {
+      milestoneName: "Go-Live",
+      baselineDate: "2026-04-28",
+      forecastDate: "2026-05-03",
+      status: "Not Started",
+      owner: "Programme Office",
+    },
+  ],
+  freeTextDump:
+    "Week 14 update: Integration layer build completed ahead of schedule with strong API team performance. UAT remains blocked due to missing client test data due on Apr 8. Escalation to Rachel Chen sent Apr 10 with no response yet. This sits on the critical path and delays impact Go-Live confidence. TechBridge changed API schema on Apr 11 without notice, creating Data Migration rework estimated at 2 days. Budget burn is accelerating with EAC at 498k vs 480k contract ceiling and CR-002 still pending.",
+  workstreams: [
+    {
+      workstreamName: "API Layer",
+      plannedTeamSize: 5,
+      actualTeamSize: 5,
+      tasksPlanned: 8,
+      tasksCompleted: 8,
+      activeBlockers: "",
+      dependencyStatus: "Clear",
+      blockers: [],
+    },
+    {
+      workstreamName: "Data Migration",
+      plannedTeamSize: 5,
+      actualTeamSize: 4,
+      tasksPlanned: 8,
+      tasksCompleted: 5,
+      activeBlockers: "Vendor TechBridge API schema changed. Rework in progress. Est. 2 days.",
+      dependencyStatus: "Blocking",
+      blockers: [],
+    },
+    {
+      workstreamName: "UAT/QA",
+      plannedTeamSize: 5,
+      actualTeamSize: 3,
+      tasksPlanned: 8,
+      tasksCompleted: 2,
+      activeBlockers:
+        "Client test data not received since Apr 8. Two QA engineers reallocated pending UAT start.",
+      dependencyStatus: "At Risk",
+      blockers: [],
+    },
+    {
+      workstreamName: "Infra/DevOps",
+      plannedTeamSize: 3,
+      actualTeamSize: 3,
+      tasksPlanned: 8,
+      tasksCompleted: 7,
+      activeBlockers: "",
+      dependencyStatus: "Clear",
+      blockers: [],
+    },
+  ],
+  raid: {
+    risks: [
+      {
+        riskDescription: "Client test data delivery delay",
+        probability: "H",
+        impact: "H",
+        owner: "",
+        mitigationAction: "",
+        status: "Open",
+        linkedMilestone: "UAT Entry",
+      },
+      {
+        riskDescription: "Budget overrun trajectory",
+        probability: "M",
+        impact: "H",
+        owner: "Agam Agrawwal",
+        mitigationAction: "Variance analysis in progress",
+        status: "In Mitigation",
+        linkedMilestone: "Go-Live",
+      },
+    ],
+    issues: [
+      {
+        description: "Scope change CR-002 approval overdue",
+        severity: "Critical",
+        dateRaised: "2026-04-04",
+        owner: "Client PMO",
+        status: "Escalated",
+        linkedDecision: "CR-002 timeline extension approval",
+      },
+      {
+        description: "QA capacity gap",
+        severity: "H",
+        dateRaised: "2026-04-10",
+        owner: "Agam Agrawwal",
+        status: "In Progress",
+        linkedDecision: "QA resource onboarding — 2 additional",
+      },
+    ],
+    dependencies: [
+      {
+        description: "TechBridge API schema",
+        type: "Vendor",
+        dueDate: "2026-04-15",
+        status: "At Risk",
+        owner: "Vendor PM",
+        blockingWhat: "Data Migration workstream",
+      },
+      {
+        description: "Client UAT test data",
+        type: "Client",
+        dueDate: "2026-04-08",
+        status: "Blocking",
+        owner: "Rachel Chen",
+        blockingWhat: "UAT Entry milestone",
+      },
+    ],
+    assumptions: [
+      {
+        statement: "Client infrastructure ready by Apr 20",
+        validated: false,
+        impactIfWrong: "High",
+        owner: "",
+      },
+      {
+        statement: "No additional scope after CR-002",
+        validated: true,
+        impactIfWrong: "High",
+        owner: "Agam Agrawwal",
+      },
+    ],
+  },
+  commercialData: {
+    engagementModel: "TNM",
+    originalContractValue: 480000,
+    currency: "USD",
+    engagementStart: "2026-01-13",
+    engagementEnd: "2026-05-05",
+    totalApprovedHours: 2400,
+    hoursConsumedToDate: 1680,
+    plannedWeeklyBurnRate: 30000,
+    internalCostToDate: 430000,
+    forecastFinalInternalCost: 498000,
+    tnmHistory: [
+      { weekLabel: "W10", actualCostThatWeek: 27000, eacAtEndOfWeek: 486000 },
+      { weekLabel: "W11", actualCostThatWeek: 29000, eacAtEndOfWeek: 489000 },
+      { weekLabel: "W12", actualCostThatWeek: 28000, eacAtEndOfWeek: 492000 },
+      { weekLabel: "W13", actualCostThatWeek: 31000, eacAtEndOfWeek: 496000 },
+      { weekLabel: "W14", actualCostThatWeek: 32000, eacAtEndOfWeek: 498000 },
+    ],
+    fpHistory: [
+      { weekLabel: "W10", internalCost: 374000, forecastFinalCost: 484000 },
+      { weekLabel: "W11", internalCost: 392000, forecastFinalCost: 487000 },
+      { weekLabel: "W12", internalCost: 401000, forecastFinalCost: 488000 },
+      { weekLabel: "W13", internalCost: 418000, forecastFinalCost: 495000 },
+      { weekLabel: "W14", internalCost: 430000, forecastFinalCost: 498000 },
+    ],
+    milestoneBilling: [
+      { milestoneName: "Integration Layer Build", billingValue: 120000, dueDate: "2026-04-08", status: "Paid" },
+      { milestoneName: "UAT Entry", billingValue: 90000, dueDate: "2026-04-14", status: "Due" },
+    ],
+    changeRequests: [
+      {
+        crId: "CR-001",
+        description: "2 additional APIs",
+        valueImpact: 24000,
+        modelImpact: "+80h",
+        status: "Approved",
+        commercialImpactNarrative: "Revised timeline accepted in planning board.",
+      },
+      {
+        crId: "CR-002",
+        description: "Timeline extension 2 weeks",
+        valueImpact: 12000,
+        modelImpact: "+40h",
+        status: "Pending",
+        commercialImpactNarrative: "Awaiting client steering committee sign-off.",
+      },
+      {
+        crId: "CR-003",
+        description: "Infra uplift",
+        valueImpact: 8000,
+        modelImpact: "+24h",
+        status: "Rejected",
+        commercialImpactNarrative: "Rejected due to budget constraints.",
+      },
+    ],
+  },
+  decisions: [
+    {
+      decisionTitle: "Client test data sign-off",
+      ownerNameRole: "Rachel Chen, VP",
+      ownerOrganisation: "NorthBridge",
+      dueDate: "2026-04-14",
+      priority: "Critical",
+      impactIfDelayed: "UAT and Go-Live slip risk increases daily.",
+    },
+    {
+      decisionTitle: "Budget reforecast approval",
+      ownerNameRole: "James Whitfield, CFO",
+      ownerOrganisation: "NorthBridge",
+      dueDate: "2026-04-15",
+      priority: "Critical",
+      impactIfDelayed: "Contract overrun exposure remains unresolved.",
+    },
+    {
+      decisionTitle: "CR-002 timeline extension approval",
+      ownerNameRole: "Rachel Chen, VP",
+      ownerOrganisation: "NorthBridge",
+      dueDate: "2026-04-16",
+      priority: "High",
+      impactIfDelayed: "Commercial and schedule plans remain blocked.",
+    },
+    {
+      decisionTitle: "QA resource onboarding — 2 additional",
+      ownerNameRole: "Agam Agrawwal",
+      ownerOrganisation: "Solutionara",
+      dueDate: "2026-04-18",
+      priority: "High",
+      impactIfDelayed: "UAT throughput risk persists.",
+    },
+  ],
+};
+
+const emptyReportInputState: ReportInput = {
+  projectData: {
+    projectName: "",
+    clientName: "",
+    reportingPeriodFrom: "",
+    reportingPeriodTo: "",
+    deliveryPMName: "",
+    currentProjectPhase: "Initiation",
+  },
+  healthData: {
+    currentBudgetBurnPercent: -1,
+    currentScopeCompletionPercent: -1,
+    currentScheduleHealthPercent: -1,
+    activeWorkstreams: undefined,
+    teamSize: undefined,
+  },
+  healthHistory: [
+    { weekLabel: "", budgetBurnPercent: 0, scopeCompletionPercent: 0, scheduleHealthPercent: 0 },
+    { weekLabel: "", budgetBurnPercent: 0, scopeCompletionPercent: 0, scheduleHealthPercent: 0 },
+  ],
+  milestones: [
+    { milestoneName: "", baselineDate: "", forecastDate: "", status: "Not Started", owner: "" },
+    { milestoneName: "", baselineDate: "", forecastDate: "", status: "Not Started", owner: "" },
+    { milestoneName: "", baselineDate: "", forecastDate: "", status: "Not Started", owner: "" },
+  ],
+  freeTextDump: "",
+  workstreams: [
+    {
+      workstreamName: "",
+      plannedTeamSize: 0,
+      actualTeamSize: 0,
+      tasksPlanned: 0,
+      tasksCompleted: 0,
+      activeBlockers: "",
+      dependencyStatus: "Clear",
+      blockers: [],
+    },
+    {
+      workstreamName: "",
+      plannedTeamSize: 0,
+      actualTeamSize: 0,
+      tasksPlanned: 0,
+      tasksCompleted: 0,
+      activeBlockers: "",
+      dependencyStatus: "Clear",
+      blockers: [],
+    },
+  ],
+  raid: {
+    risks: [],
+    issues: [],
+    dependencies: [],
+    assumptions: [],
+  },
+  commercialData: {
+    engagementModel: "TNM",
+    originalContractValue: 0,
+    currency: "USD",
+    engagementStart: "",
+    engagementEnd: "",
+    totalApprovedHours: 0,
+    hoursConsumedToDate: 0,
+    plannedWeeklyBurnRate: 0,
+    internalCostToDate: 0,
+    forecastFinalInternalCost: 0,
+    tnmHistory: [
+      { weekLabel: "", actualCostThatWeek: 0, eacAtEndOfWeek: 0 },
+      { weekLabel: "", actualCostThatWeek: 0, eacAtEndOfWeek: 0 },
+      { weekLabel: "", actualCostThatWeek: 0, eacAtEndOfWeek: 0 },
+    ],
+    fpHistory: [
+      { weekLabel: "", internalCost: 0, forecastFinalCost: 0 },
+      { weekLabel: "", internalCost: 0, forecastFinalCost: 0 },
+      { weekLabel: "", internalCost: 0, forecastFinalCost: 0 },
+    ],
+    milestoneBilling: [
+      { milestoneName: "", billingValue: 0, dueDate: "", status: "Scheduled" },
+      { milestoneName: "", billingValue: 0, dueDate: "", status: "Scheduled" },
+    ],
+    changeRequests: [],
+  },
+  decisions: [],
+};
+
+export function useReportInput(initialState?: ReportInput) {
+  const [reportInput, setReportInput] = useState<ReportInput>(initialState ?? sampleReportInputState);
+
+  return {
+    reportInput,
+    setReportInput,
+    resetReportInput: () => setReportInput(initialState ?? sampleReportInputState),
+  };
+}
+
+export { sampleReportInputState, emptyReportInputState };
