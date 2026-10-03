@@ -12,6 +12,7 @@ import { existsSync, readFileSync } from "fs";
 import { resolve } from "path";
 
 import { Pool, type PoolClient } from "pg";
+import { assertSafeDevelopmentDatabaseEnvironment } from "../src/lib/db/development-database-safety";
 
 function applyEnvFile(filePath: string, override: boolean): void {
   if (!existsSync(filePath)) {
@@ -491,6 +492,7 @@ async function migrate(client: PoolClient): Promise<void> {
 
 async function main(): Promise<void> {
   loadEnv();
+  assertSafeDevelopmentDatabaseEnvironment();
   const connectionString = process.env.DATABASE_URL ?? "";
   if (!connectionString.startsWith("postgres")) {
     throw new Error("DATABASE_URL must be a direct postgres:// or postgresql:// URL");

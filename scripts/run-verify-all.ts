@@ -3,6 +3,7 @@
  * Usage: npm run test:verify
  * Optional: TEST_BASE_URL=http://localhost:3001 (default)
  */
+import "./load-local-env";
 import { spawnSync } from "child_process";
 import { existsSync } from "fs";
 import { join } from "path";

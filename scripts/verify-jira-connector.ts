@@ -40,7 +40,7 @@ async function testApi(baseUrl: string) {
 
 async function main() {
   if (!process.env.ENCRYPTION_KEY) {
-    process.env.ENCRYPTION_KEY = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    process.env.ENCRYPTION_KEY = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"; // gitleaks:allow -- deterministic test-only key
     console.log("ℹ Using temporary ENCRYPTION_KEY for crypto smoke test");
   }
 

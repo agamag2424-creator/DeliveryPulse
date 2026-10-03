@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:database-safety": "npx tsx scripts/verify-database-safety.ts",
     "test:verify": "npx tsx scripts/run-verify-all.ts",
     "test:verify:epic0": "npx tsx scripts/verify-epic-0-generate-auth.ts",
     "test:verify:epic1": "npx tsx scripts/verify-epic-1-org.ts",

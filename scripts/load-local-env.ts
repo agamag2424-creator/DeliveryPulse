@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "fs";
 import { resolve } from "path";
+import { assertSafeDevelopmentDatabaseEnvironment } from "../src/lib/db/development-database-safety";
 
 function applyEnvFile(filePath: string, override: boolean): void {
   if (!existsSync(filePath)) {
@@ -32,3 +33,4 @@ function applyEnvFile(filePath: string, override: boolean): void {
 const root = resolve(__dirname, "..");
 applyEnvFile(resolve(root, ".env"), false);
 applyEnvFile(resolve(root, ".env.local"), true);
+assertSafeDevelopmentDatabaseEnvironment();

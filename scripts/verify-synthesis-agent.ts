@@ -6,6 +6,7 @@ import { cloudBridgeSampleReportInput } from "../src/data/cloudbridge-sample";
 import { checkGaps } from "../src/lib/agent/gapCheck";
 import { normaliseJiraToReportInput } from "../src/lib/agent/normalise";
 import type { NormalisedTaskData } from "../src/lib/connectors/jira/types";
+import { assertSafeDevelopmentDatabaseEnvironment } from "../src/lib/db/development-database-safety";
 
 function assert(condition: boolean, message: string) {
   if (!condition) {
@@ -50,7 +51,9 @@ const mockProject = {
 
 async function testGraphInitialises() {
   process.env.DATABASE_URL ??=
-    "postgresql://postgres:postgres@localhost:51214/template1?sslmode=disable";
+    "postgresql://delivery_pulse@localhost:5432/delivery_pulse_development";
+  process.env.DIRECT_URL ??= process.env.DATABASE_URL;
+  assertSafeDevelopmentDatabaseEnvironment();
   const { synthesisAgentGraph } = await import("../src/lib/agent/synthesisAgent");
   assert(Boolean(synthesisAgentGraph), "synthesisAgentGraph must compile");
   assert(typeof synthesisAgentGraph.invoke === "function", "graph.invoke must exist");

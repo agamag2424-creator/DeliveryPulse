@@ -4,7 +4,12 @@ function assert(condition: boolean, message: string) {
 
 async function main() {
   process.env.DATABASE_URL ??=
-    "postgresql://postgres:postgres@localhost:51214/template1?sslmode=disable";
+    "postgresql://delivery_pulse@localhost:5432/delivery_pulse_development";
+  process.env.DIRECT_URL ??= process.env.DATABASE_URL;
+  const { assertSafeDevelopmentDatabaseEnvironment } = await import(
+    "../src/lib/db/development-database-safety"
+  );
+  assertSafeDevelopmentDatabaseEnvironment();
 
   const { embedReport } = await import("../src/lib/jobs/embedReport");
   const { projectEmbeddingExists } = await import("../src/lib/db/embeddings");
