@@ -1,3 +1,9 @@
+// PHASE 1 FROZEN — DO NOT MODIFY WITHOUT EXPLICIT WRITTEN INSTRUCTION FROM AGAM
+// This file is part of the Phase 1 foundation and contains deliberate design decisions.
+// Phase 2 extends this file only where absolutely necessary.
+// Permitted Phase 2 additions: auth session check at route level, saveReport() call after generation.
+// Everything else: unchanged.
+
 import { z } from "zod";
 
 const ragSchema = z.enum(["RED", "AMBER", "GREEN"]);
@@ -80,10 +86,16 @@ const financialKPISchema = z.object({
   variance_percent: z.number(),
   variance_rag: ragSchema,
   engagement_model: z
-    .string()
+    .union([z.string(), z.null(), z.undefined()])
+    .transform((val) => (val == null ? "" : val))
     .transform((val) => val.trim().toUpperCase().replace(/[^A-Z]/g, ""))
     .transform((val) => {
-      if (val === "TM" || val === "TAM" || val === "TIMEANDMATERIALS") return "TNM";
+      if (val === "TM" || val === "TAM" || val === "TNM" || val === "TIMEANDMATERIALS" || val === "TIMEANDMATERIAL") {
+        return "TNM";
+      }
+      if (val === "FP" || val === "FIXEDPRICE" || val === "FIXED" || val.startsWith("FIXED")) {
+        return "FP";
+      }
       return val;
     })
     .pipe(z.enum(["TNM", "FP"])),

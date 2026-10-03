@@ -1,8 +1,14 @@
+// PHASE 1 FROZEN — DO NOT MODIFY WITHOUT EXPLICIT WRITTEN INSTRUCTION FROM AGAM
+// This file is part of the Phase 1 foundation and contains deliberate design decisions.
+// Phase 2 extends this file only where absolutely necessary.
+// Permitted Phase 2 additions: auth session check at route level, saveReport() call after generation.
+// Everything else: unchanged.
+
 "use client";
 
 import { createContext, useContext, useMemo, useState } from "react";
 
-import { sampleReportInputState } from "@/hooks/useReportInput";
+import { emptyReportInputState } from "@/hooks/useReportInput";
 import type { ReportInput, SlideData } from "@/types/report";
 
 interface ReportContextValue {
@@ -17,7 +23,7 @@ interface ReportContextValue {
 const ReportContext = createContext<ReportContextValue | undefined>(undefined);
 
 export function ReportProvider({ children }: { children: React.ReactNode }) {
-  const [reportInput, setReportInput] = useState<ReportInput>(sampleReportInputState);
+  const [reportInput, setReportInput] = useState<ReportInput>(emptyReportInputState);
   const [reportOutput, setReportOutput] = useState<SlideData | null>(null);
   const [hasGeneratedInput, setHasGeneratedInput] = useState(false);
 

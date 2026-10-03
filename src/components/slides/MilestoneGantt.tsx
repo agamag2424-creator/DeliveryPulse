@@ -1,3 +1,9 @@
+// PHASE 1 FROZEN — DO NOT MODIFY WITHOUT EXPLICIT WRITTEN INSTRUCTION FROM AGAM
+// This file is part of the Phase 1 foundation and contains deliberate design decisions.
+// Phase 2 extends this file only where absolutely necessary.
+// Permitted Phase 2 additions: auth session check at route level, saveReport() call after generation.
+// Everything else: unchanged.
+
 "use client";
 
 import { useMemo, useState } from "react";
@@ -166,18 +172,6 @@ export function MilestoneGantt({ milestones }: MilestoneGanttProps) {
               barSize={14}
               radius={[3, 3, 3, 3]}
               fill="#3B82F6"
-              label={(props) => {
-                const row = props.payload as MilestoneRow | undefined;
-                if (!row || row.status !== "Complete") return null;
-                const x = typeof props.x === "number" ? props.x : 0;
-                const y = typeof props.y === "number" ? props.y : 0;
-                const width = typeof props.width === "number" ? props.width : 0;
-                return (
-                  <text x={x + width + 4} y={y + 10} fill="#9CA3AF">
-                    ✓
-                  </text>
-                );
-              }}
               shape={(props) => {
                 const row = props.payload as MilestoneRow;
                 return (
