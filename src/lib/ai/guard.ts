@@ -23,8 +23,21 @@ export function useChisokuGuard(): boolean {
   return Boolean(getGuardBaseUrl() && getGuardApiKey());
 }
 
+/**
+ * Build X-Guard-Session. Fetch/undici require header values to be ByteStrings
+ * (codepoints ≤ 255); project names often contain em dashes (U+2014) and other
+ * Unicode, which otherwise throw before the request leaves the process.
+ */
 export function guardSessionHeader(sessionId: string | undefined): Record<string, string> {
   if (!sessionId?.trim()) return {};
-  const value = sessionId.trim().slice(0, 200);
+  const value = sessionId
+    .trim()
+    .normalize("NFKD")
+    // Keep printable ASCII only; collapse everything else to a single hyphen.
+    .replace(/[^\x20-\x7E]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 200);
+  if (!value) return {};
   return { "X-Guard-Session": value };
 }
