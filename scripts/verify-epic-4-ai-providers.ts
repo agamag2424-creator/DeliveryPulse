@@ -43,6 +43,11 @@ function assertCallSitesUseInterface(): void {
   assert(llmFactory.includes("const exhaustive: never"), "LLM factory must exhaust provider ids");
   assert(llmFactory.includes('case "anthropic"'), "Anthropic is the current LLM implementation");
 
+  const anthropicProvider = readSrc("src/lib/ai/providers/anthropic-llm.ts");
+  assert(anthropicProvider.includes("useChisokuGuard"), "Anthropic client supports Chisoku Guard");
+  assert(anthropicProvider.includes("createAnthropic"), "Guard path uses createAnthropic with baseURL");
+  assert(existsSync(join(__dirname, "../src/lib/ai/guard.ts")), "src/lib/ai/guard.ts holds Guard env helpers");
+
   const embedFactory = readSrc("src/lib/ai/embeddings.ts");
   assert(embedFactory.includes("const exhaustive: never"), "embedding factory must exhaust provider ids");
   assert(embedFactory.includes('case "openai"'), "OpenAI is the current embedding implementation");

@@ -42,6 +42,24 @@ Same steps with `EmbeddingClient`, `EMBEDDING_PROVIDER_IDS`, `src/lib/ai/embeddi
 
 Keep vectors at 1536 dimensions unless you also migrate stored `vector(1536)` embeddings.
 
+## Route LLM through Chisoku Guard (E14.4)
+
+When both are set, `AnthropicLlmClient` points `@ai-sdk/anthropic` at Guard and sends the Guard app key as `Authorization: Bearer`:
+
+```
+GUARD_BASE_URL=http://localhost:8080
+GUARD_API_KEY=cg_...
+AI_LLM_MODEL=default
+```
+
+1. In Guard console: register app **Delivery Pulse**, assign a profile in **watch**, mint a key with the `chat` scope.
+2. Allowlist the Anthropic account + model (or an alias named `default`).
+3. Restart `npm run dev`. Generate a report; confirm Activity in Guard shows the request with `X-Guard-Session` like `dp-report:<projectName>`.
+
+**Embeddings are not routed through Guard** — they still use `OPENAI_API_KEY` (or Vercel AI Gateway). Guard’s data plane today is chat/messages only.
+
+Founder checkpoint **C5** (switch watch → enforce) lives in the Chisoku Guard repo: `docs/evidence/E14.4-integration.md`.
+
 ## Do not
 
 - Import a vendor SDK from `generateReport.ts`, `gapExtract.ts`, or `embed.ts`.

@@ -200,11 +200,13 @@ export async function generateReport(input: ReportInput, actor?: UsageActor): Pr
   let tokens = emptyUsage();
 
   try {
+    const session = `dp-report:${input.projectData.projectName}`.slice(0, 200);
     const initial = await llm.complete({
       system: REPORT_SYSTEM_PROMPT,
       user: buildReportUserPrompt(input),
       maxTokens: REPORT_MAX_OUTPUT_TOKENS,
       temperature: 0,
+      session,
     });
     tokens = addUsage(tokens, initial);
     let validated;
@@ -235,6 +237,7 @@ ${JSON.stringify(input)}
         user: repairPrompt,
         maxTokens: REPORT_MAX_OUTPUT_TOKENS,
         temperature: 0,
+        session,
       });
       tokens = addUsage(tokens, repaired);
       try {

@@ -8,6 +8,8 @@ export type LlmCompleteRequest = {
   user: string;
   maxTokens: number;
   temperature: number;
+  /** Optional Chisoku Guard X-Guard-Session (vault / audit grouping). */
+  session?: string;
 };
 
 export type LlmCompleteResult = TokenUsage & {

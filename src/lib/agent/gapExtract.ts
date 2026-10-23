@@ -48,6 +48,7 @@ Rules:
       user: prompt,
       maxTokens: 1000,
       temperature: 0,
+      session: "dp-gap-extract",
     });
 
     if (actor) {
