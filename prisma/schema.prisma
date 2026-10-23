@@ -1,0 +1,286 @@
+// Prisma 7.8.0 + pgvector (verified 2026-05-30):
+// - previewFeatures postgresqlExtensions + extensions pgvector(map: "vector") → CREATE EXTENSION IF NOT EXISTS "vector"
+// - Vector columns: Unsupported("vector(1536)")? — no native Prisma type yet; use $executeRaw / $queryRaw for insert/search
+// - migrate diff emits: embedding vector(1536) on ReportEmbedding and ProjectEmbedding
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [pgvector(map: "vector")]
+}
+
+enum OrgRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum BillingPlan {
+  FREE
+  PRO
+}
+
+enum SubscriptionStatus {
+  NONE
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCEL_SCHEDULED
+  HALTED
+  CANCELLED
+}
+
+model User {
+  id                    String                     @id @default(cuid())
+  email                 String                     @unique
+  name                  String?
+  image                 String?
+  passwordHash          String?
+  emailVerified         DateTime?
+  onboardingDismissed   Boolean                    @default(false)
+  activeOrganizationId  String?
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+  memberships           Membership[]
+  createdProjects       Project[]                  @relation("ProjectCreator")
+  reports               Report[]
+  accounts              Account[]
+  sessions              Session[]
+  connectedIntegrations OrganizationIntegration[]  @relation("IntegrationConnectedBy")
+  invitesSent           OrganizationInvite[]       @relation("InviteSender")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Organization {
+  id                     String                     @id @default(cuid())
+  name                   String
+  billingPlan            BillingPlan                @default(FREE)
+  subscriptionStatus     SubscriptionStatus         @default(NONE)
+  trialEndsAt            DateTime?
+  currentPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean                    @default(false)
+  razorpayCustomerId     String?
+  razorpaySubscriptionId String?
+  lastPaymentError       String?
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
+  memberships            Membership[]
+  projects               Project[]
+  integrations           OrganizationIntegration[]
+  invites                OrganizationInvite[]
+  usageEvents            UsageEvent[]
+  onboardingManualChosen Boolean                    @default(false)
+  onboardingInviteDeferred Boolean                  @default(false)
+}
+
+model BillingWebhookEvent {
+  id        String   @id
+  eventType String
+  createdAt DateTime @default(now())
+}
+
+enum UsageKind {
+  REPORT_GENERATE
+  GAP_EXTRACT
+  EMBEDDING
+}
+
+enum UsageStatus {
+  SUCCESS
+  FAILURE
+}
+
+model UsageEvent {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String?
+  kind           UsageKind
+  status         UsageStatus
+  provider       String?
+  model          String?
+  inputTokens    Int          @default(0)
+  outputTokens   Int          @default(0)
+  error          String?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, kind, createdAt])
+}
+
+model Membership {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           OrgRole
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+}
+
+model OrganizationInvite {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           OrgRole
+  token          String       @unique
+  invitedById    String
+  invitedBy      User         @relation("InviteSender", fields: [invitedById], references: [id], onDelete: Cascade)
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, email])
+  @@index([email])
+}
+
+model OrganizationIntegration {
+  id                String                    @id @default(cuid())
+  organizationId    String
+  organization      Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  type              String
+  status            String                    @default("PENDING")
+  credentialsEnc    String                    @db.Text
+  connectedByUserId String?
+  connectedBy       User?                     @relation("IntegrationConnectedBy", fields: [connectedByUserId], references: [id], onDelete: SetNull)
+  lastSyncedAt      DateTime?
+  lastSyncStatus    String?
+  lastSyncError     String?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  bindings          ProjectConnectorBinding[]
+
+  @@unique([organizationId, type])
+  @@index([organizationId])
+}
+
+model Project {
+  id              String                    @id @default(cuid())
+  organizationId  String
+  organization    Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdByUserId String?
+  createdBy       User?                     @relation("ProjectCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  name            String
+  clientName      String
+  startDate       DateTime
+  endDate         DateTime
+  phase           String
+  engagementModel String
+  currency        String                    @default("USD")
+  contractValue   Float                     @default(0)
+  isArchived      Boolean                   @default(false)
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  reports            Report[]
+  embeddings         ProjectEmbedding[]
+  connectorBindings  ProjectConnectorBinding[]
+}
+
+model ProjectConnectorBinding {
+  id             String                  @id @default(cuid())
+  projectId      String
+  project        Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  integrationId  String
+  integration    OrganizationIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  type           String
+  status         String                  @default("PENDING")
+  config         Json
+  lastSyncedAt   DateTime?
+  lastSyncStatus String?
+  lastSyncError  String?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  @@unique([projectId, type])
+  @@index([integrationId])
+}
+
+model Report {
+  id              String            @id @default(cuid())
+  projectId       String
+  project         Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId          String?
+  user            User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  weekLabel       String
+  periodFrom      DateTime
+  periodTo        DateTime
+  inputSnapshot   Json
+  outputSnapshot  Json
+  ragStatus       String
+  ragAiSuggested  String
+  ragOverridden   Boolean           @default(false)
+  generatedAt     DateTime          @default(now())
+  embeddings      ReportEmbedding[]
+}
+
+model ReportEmbedding {
+  id        String                       @id @default(cuid())
+  reportId  String
+  report    Report                       @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  userId    String
+  projectId String
+  content   String                       @db.Text
+  embedding Unsupported("vector(1536)")?
+  chunkType String
+  metadata  Json                         @default("{}")
+  createdAt DateTime                     @default(now())
+
+  @@index([projectId])
+  @@index([userId])
+}
+
+model ProjectEmbedding {
+  id         String                       @id @default(cuid())
+  projectId  String
+  project    Project                      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId     String
+  content    String                       @db.Text
+  embedding  Unsupported("vector(1536)")?
+  sourceType String
+  sourceRef  String?
+  createdAt  DateTime                     @default(now())
+  updatedAt  DateTime                     @updatedAt
+
+  @@index([projectId])
+  @@index([userId])
+}

@@ -1,6 +1,15 @@
+// PHASE 1 FROZEN — DO NOT MODIFY WITHOUT EXPLICIT WRITTEN INSTRUCTION FROM AGAM
+// This file is part of the Phase 1 foundation and contains deliberate design decisions.
+// Phase 2 extends this file only where absolutely necessary.
+// Permitted Phase 2 additions: auth session check at route level, saveReport() call after generation.
+// Everything else: unchanged.
+// Epic 3 (SaaS launch backlog): generate error path may show quota + upgrade CTA.
+
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { HistoryRow, Milestone, RiskItem, Workstream } from "@/types/report";
 import { FormDatePicker } from "@/components/form/FormDatePicker";
 import { FormInput } from "@/components/form/FormInput";
@@ -9,7 +18,7 @@ import { SectionWrapper } from "@/components/form/SectionWrapper";
 import { useReportContext } from "@/context/ReportContext";
 import { emptyReportInputState, sampleReportInputState } from "@/hooks/useReportInput";
 import type { ReportOutput } from "@/lib/reportOutputSchema";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { BILLING_UPGRADE_PATH, isQuotaExceededPayload } from "@/lib/usage/constants";
 
 interface ValidationState {
   [key: string]: string | undefined;
@@ -35,20 +44,26 @@ export default function InputPage() {
   const [raidTab, setRaidTab] = useState<"risks" | "issues" | "dependencies" | "assumptions">("risks");
   const [isGenerating, setIsGenerating] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [quotaExceeded, setQuotaExceeded] = useState(false);
   const [pendingOutput, setPendingOutput] = useState<ReportOutput | null>(null);
   const [overrideRag, setOverrideRag] = useState<"RED" | "AMBER" | "GREEN">("GREEN");
   const [overrideReason, setOverrideReason] = useState("");
-  const didAutoSeed = useRef(false);
+  const lastAppliedPreset = useRef<"demo" | "standard" | null>(null);
 
   useEffect(() => {
-    if (didAutoSeed.current) {
+    const isDemoMode = new URLSearchParams(window.location.search).get("demo") === "true";
+    const nextPreset = isDemoMode ? "demo" : "standard";
+    if (lastAppliedPreset.current === nextPreset) {
       return;
     }
-    didAutoSeed.current = true;
-    if (!reportInput.projectData.projectName.trim()) {
+
+    if (isDemoMode) {
       setReportInput(sampleReportInputState);
+      setPendingOutput(null);
+      setSubmitError(null);
     }
-  }, [reportInput.projectData.projectName, setReportInput]);
+    lastAppliedPreset.current = nextPreset;
+  }, [setReportInput]);
 
   const emptyWorkstream: Workstream = {
     workstreamName: "",
@@ -311,6 +326,7 @@ export default function InputPage() {
 
   const handleGenerateReport = async () => {
     setSubmitError(null);
+    setQuotaExceeded(false);
     if (completedCount !== 8) {
       setSubmitError("Please complete all mandatory fields before generating the report.");
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -326,6 +342,7 @@ export default function InputPage() {
       });
       const payload = await response.json();
       if (!response.ok) {
+        setQuotaExceeded(isQuotaExceededPayload(payload, response.status));
         setSubmitError(payload?.error ?? "Failed to generate report.");
         return;
       }
@@ -348,8 +365,15 @@ export default function InputPage() {
     }
 
     setReportInput(reportInput);
+    const normalizedRaidAttentionItems = pendingOutput.raid_attention_items.map((item) => ({
+      ...item,
+      days_open: item.days_open ?? undefined,
+      score: item.score ?? undefined,
+    }));
+
     setReportOutput({
       ...pendingOutput,
+      raid_attention_items: normalizedRaidAttentionItems,
       rag_status: overrideRag,
       rag_reason: overrideReason.trim() || pendingOutput.rag_reason,
     });
@@ -363,9 +387,17 @@ export default function InputPage() {
         {submitError ? (
           <div className="fixed right-4 top-20 z-50 rounded-lg border border-rag-red bg-rag-red/90 px-4 py-3 text-sm text-white shadow-lg">
             {submitError}
+            {quotaExceeded ? (
+              <>
+                {" "}
+                <Link href={BILLING_UPGRADE_PATH} className="font-semibold underline">
+                  Upgrade to Pro
+                </Link>
+              </>
+            ) : null}
           </div>
         ) : null}
-        <div className="sticky top-2 z-20 rounded-xl border border-border bg-background-card/95 p-4 backdrop-blur">
+        <div className="sticky top-2 z-20 rounded-panel border border-border bg-background-card/95 p-4 backdrop-blur">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <p className="text-sm font-semibold text-text-primary">
               Section {completedCount} of 8 complete
@@ -393,7 +425,7 @@ export default function InputPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-background-card p-6">
+        <div className="rounded-panel border border-border bg-background-card p-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <h1 className="text-2xl font-semibold text-text-primary">Project Input Form</h1>
@@ -407,7 +439,7 @@ export default function InputPage() {
               </span>
               <button
                 type="button"
-                className="rounded-lg border border-border px-4 py-2 text-sm text-text-primary hover:bg-background-elevated"
+                className="rounded-[3px] border border-ink px-4 py-2 text-sm font-semibold text-ink hover:bg-faint"
                 onClick={() => setReportInput(sampleReportInputState)}
               >
                 Reset to Sample Data
@@ -599,7 +631,7 @@ export default function InputPage() {
             />
           </div>
 
-          <div className="mt-6 overflow-x-auto rounded-xl border border-border">
+          <div className="mt-6 overflow-x-auto rounded-panel border border-border">
             <table className="min-w-full border-collapse">
               <thead className="bg-background-elevated text-left text-xs uppercase tracking-wider text-text-muted">
                 <tr>
@@ -694,7 +726,7 @@ export default function InputPage() {
                   ],
                 }))
               }
-              className="rounded-lg border border-border px-4 py-2 text-sm text-text-primary hover:bg-background-elevated"
+              className="rounded-[3px] border border-ink px-4 py-2 text-sm font-semibold text-ink hover:bg-faint"
             >
               Add Row
             </button>
@@ -708,7 +740,7 @@ export default function InputPage() {
           title="Section C — Milestone Table"
           description="Baseline vs forecast milestones for schedule confidence tracking."
         >
-          <div className="overflow-x-auto rounded-xl border border-border">
+          <div className="overflow-x-auto rounded-panel border border-border">
             <table className="min-w-full border-collapse">
               <thead className="bg-background-elevated text-left text-xs uppercase tracking-wider text-text-muted">
                 <tr>
@@ -815,7 +847,7 @@ export default function InputPage() {
                     ],
                   }))
                 }
-                className="rounded-lg border border-border px-4 py-2 text-sm text-text-primary hover:bg-background-elevated"
+                className="rounded-[3px] border border-ink px-4 py-2 text-sm font-semibold text-ink hover:bg-faint"
               >
                 Add Row
               </button>
@@ -881,7 +913,7 @@ export default function InputPage() {
           description="Execution health by workstream."
           defaultOpen={false}
         >
-          <div className="overflow-x-auto rounded-xl border border-border">
+          <div className="overflow-x-auto rounded-panel border border-border">
             <table className="min-w-full border-collapse">
               <thead className="bg-background-elevated text-left text-xs uppercase tracking-wider text-text-muted">
                 <tr>
@@ -1033,7 +1065,7 @@ export default function InputPage() {
           {reportInput.workstreams.length < 8 ? (
             <button
               type="button"
-              className="mt-3 rounded-lg border border-border px-4 py-2 text-sm text-text-primary hover:bg-background-elevated"
+              className="mt-3 rounded-[3px] border border-ink px-4 py-2 text-sm font-semibold text-ink hover:bg-faint"
               onClick={() =>
                 setReportInput((previous) => ({
                   ...previous,
@@ -1070,7 +1102,7 @@ export default function InputPage() {
                 type="button"
                 onClick={() => setRaidTab(key)}
                 className={`rounded-lg border px-4 py-2 text-sm ${
-                  raidTab === key ? "border-accent-blue bg-accent-blue text-white" : "border-border text-text-secondary"
+                  raidTab === key ? "border-ink bg-ink text-cream" : "border-border text-text-secondary"
                 }`}
               >
                 {label} ({count})
@@ -1081,7 +1113,7 @@ export default function InputPage() {
           {raidTab === "risks" ? (
             <div className="space-y-3">
               {reportInput.raid.risks.map((risk, index) => (
-                <div key={`risk-${index}`} className="rounded-xl border border-border p-4">
+                <div key={`risk-${index}`} className="rounded-panel border border-border p-4">
                   <div className="grid gap-3 md:grid-cols-2">
                     <FormInput
                       id={`risk-desc-${index}`}
@@ -1185,7 +1217,7 @@ export default function InputPage() {
               ))}
               <button
                 type="button"
-                className="rounded-lg border border-border px-4 py-2 text-sm text-text-primary hover:bg-background-elevated"
+                className="rounded-[3px] border border-ink px-4 py-2 text-sm font-semibold text-ink hover:bg-faint"
                 onClick={() =>
                   setReportInput((previous) => ({
                     ...previous,
@@ -1214,7 +1246,7 @@ export default function InputPage() {
           {raidTab === "issues" ? (
             <div className="space-y-3">
               {reportInput.raid.issues.map((issue, index) => (
-                <div key={`issue-${index}`} className="rounded-xl border border-border p-4">
+                <div key={`issue-${index}`} className="rounded-panel border border-border p-4">
                   <div className="grid gap-3 md:grid-cols-2">
                     <FormInput
                       id={`issue-desc-${index}`}
@@ -1311,7 +1343,7 @@ export default function InputPage() {
               ))}
               <button
                 type="button"
-                className="rounded-lg border border-border px-4 py-2 text-sm text-text-primary hover:bg-background-elevated"
+                className="rounded-[3px] border border-ink px-4 py-2 text-sm font-semibold text-ink hover:bg-faint"
                 onClick={() =>
                   setReportInput((previous) => ({
                     ...previous,
@@ -1340,7 +1372,7 @@ export default function InputPage() {
           {raidTab === "dependencies" ? (
             <div className="space-y-3">
               {reportInput.raid.dependencies.map((dependency, index) => (
-                <div key={`dependency-${index}`} className="rounded-xl border border-border p-4">
+                <div key={`dependency-${index}`} className="rounded-panel border border-border p-4">
                   <div className="grid gap-3 md:grid-cols-2">
                     <FormInput
                       id={`dependency-desc-${index}`}
@@ -1434,7 +1466,7 @@ export default function InputPage() {
               ))}
               <button
                 type="button"
-                className="rounded-lg border border-border px-4 py-2 text-sm text-text-primary hover:bg-background-elevated"
+                className="rounded-[3px] border border-ink px-4 py-2 text-sm font-semibold text-ink hover:bg-faint"
                 onClick={() =>
                   setReportInput((previous) => ({
                     ...previous,
@@ -1463,7 +1495,7 @@ export default function InputPage() {
           {raidTab === "assumptions" ? (
             <div className="space-y-3">
               {reportInput.raid.assumptions.map((assumption, index) => (
-                <div key={`assumption-${index}`} className="rounded-xl border border-border p-4">
+                <div key={`assumption-${index}`} className="rounded-panel border border-border p-4">
                   <div className="grid gap-3 md:grid-cols-2">
                     <FormInput
                       id={`assumption-statement-${index}`}
@@ -1538,7 +1570,7 @@ export default function InputPage() {
               ))}
               <button
                 type="button"
-                className="rounded-lg border border-border px-4 py-2 text-sm text-text-primary hover:bg-background-elevated"
+                className="rounded-[3px] border border-ink px-4 py-2 text-sm font-semibold text-ink hover:bg-faint"
                 onClick={() =>
                   setReportInput((previous) => ({
                     ...previous,
@@ -1563,7 +1595,7 @@ export default function InputPage() {
             <button
               type="button"
               className={`rounded-md px-4 py-2 text-sm ${
-                reportInput.commercialData.engagementModel === "TNM" ? "bg-accent-blue text-white" : "text-text-secondary"
+                reportInput.commercialData.engagementModel === "TNM" ? "bg-ink text-cream" : "text-text-secondary"
               }`}
               onClick={() =>
                 setReportInput((previous) => ({
@@ -1577,7 +1609,7 @@ export default function InputPage() {
             <button
               type="button"
               className={`rounded-md px-4 py-2 text-sm ${
-                reportInput.commercialData.engagementModel === "FP" ? "bg-accent-blue text-white" : "text-text-secondary"
+                reportInput.commercialData.engagementModel === "FP" ? "bg-ink text-cream" : "text-text-secondary"
               }`}
               onClick={() =>
                 setReportInput((previous) => ({
@@ -1698,7 +1730,7 @@ export default function InputPage() {
                   }
                 />
               </div>
-              <div className="rounded-xl border border-border p-4">
+              <div className="rounded-panel border border-border p-4">
                 <p className="mb-2 text-sm font-semibold text-text-primary">Combined History (min 3 rows)</p>
                 {(reportInput.commercialData.tnmHistory ?? []).map((row, index) => (
                   <div key={`tnm-history-${index}`} className="mb-2 grid gap-2 md:grid-cols-4">
@@ -1798,7 +1830,7 @@ export default function InputPage() {
                   }
                 />
               </div>
-              <div className="rounded-xl border border-border p-4">
+              <div className="rounded-panel border border-border p-4">
                 <p className="mb-2 text-sm font-semibold text-text-primary">Milestone Billing (min 2 rows)</p>
                 {(reportInput.commercialData.milestoneBilling ?? []).map((row, index) => (
                   <div key={`billing-${index}`} className="mb-2 grid gap-2 md:grid-cols-5">
@@ -1891,7 +1923,7 @@ export default function InputPage() {
                   </div>
                 ))}
               </div>
-              <div className="rounded-xl border border-border p-4">
+              <div className="rounded-panel border border-border p-4">
                 <p className="mb-2 text-sm font-semibold text-text-primary">Combined History (min 3 rows)</p>
                 {(reportInput.commercialData.fpHistory ?? []).map((row, index) => (
                   <div key={`fp-history-${index}`} className="mb-2 grid gap-2 md:grid-cols-4">
@@ -1957,7 +1989,7 @@ export default function InputPage() {
             </div>
           )}
 
-          <div className="mt-5 rounded-xl border border-border p-4">
+          <div className="mt-5 rounded-panel border border-border p-4">
             <h3 className="text-sm font-semibold text-text-primary">Change Requests</h3>
             <p className="mt-2 text-xs text-text-muted">
               Impact column switches with engagement model:{" "}
@@ -2093,7 +2125,7 @@ export default function InputPage() {
             </div>
             <button
               type="button"
-              className="mt-3 rounded-lg border border-border px-4 py-2 text-sm text-text-primary hover:bg-background-elevated"
+              className="mt-3 rounded-[3px] border border-ink px-4 py-2 text-sm font-semibold text-ink hover:bg-faint"
               onClick={() =>
                 setReportInput((previous) => ({
                   ...previous,
@@ -2120,7 +2152,7 @@ export default function InputPage() {
         </SectionWrapper>
 
         <SectionWrapper title="Section H — Decisions" description="Leadership decisions and due dates." defaultOpen={false}>
-          <div className="mt-3 overflow-x-auto rounded-xl border border-border">
+          <div className="mt-3 overflow-x-auto rounded-panel border border-border">
             <table className="min-w-full border-collapse">
               <thead className="bg-background-elevated text-left text-xs uppercase tracking-wider text-text-muted">
                 <tr>
@@ -2244,7 +2276,7 @@ export default function InputPage() {
 
           <button
             type="button"
-            className="rounded-lg border border-border px-4 py-2 text-sm text-text-primary hover:bg-background-elevated"
+            className="rounded-[3px] border border-ink px-4 py-2 text-sm font-semibold text-ink hover:bg-faint"
             onClick={() =>
               setReportInput((previous) => ({
                 ...previous,
@@ -2266,15 +2298,23 @@ export default function InputPage() {
           </button>
         </SectionWrapper>
 
-        <div className="sticky bottom-3 z-20 rounded-xl border border-border bg-background-card/95 p-4 backdrop-blur">
+        <div className="sticky bottom-3 z-20 rounded-panel border border-border bg-background-card/95 p-4 backdrop-blur">
           {submitError ? (
             <p className="mb-3 rounded-lg border border-rag-red bg-rag-red/10 px-3 py-2 text-sm text-rag-red">
               {submitError}
+              {quotaExceeded ? (
+                <>
+                  {" "}
+                  <Link href={BILLING_UPGRADE_PATH} className="font-semibold underline">
+                    Upgrade to Pro
+                  </Link>
+                </>
+              ) : null}
             </p>
           ) : null}
 
           {pendingOutput ? (
-            <div className="mb-3 rounded-xl border border-border bg-background-elevated p-4">
+            <div className="mb-3 rounded-panel border border-border bg-background-elevated p-4">
               <p className="text-sm font-semibold text-text-primary">AI-suggested RAG: {pendingOutput.rag_status}</p>
               <p className="mt-1 text-xs text-text-secondary">{pendingOutput.rag_reason}</p>
               <div className="mt-3 grid gap-3 md:grid-cols-3">
@@ -2284,7 +2324,7 @@ export default function InputPage() {
                     type="button"
                     className={`rounded-lg border px-3 py-2 text-sm ${
                       overrideRag === rag
-                        ? "border-accent-blue bg-accent-blue text-white"
+                        ? "border-ink bg-ink text-cream"
                         : "border-border text-text-secondary"
                     }`}
                     onClick={() => setOverrideRag(rag)}
@@ -2311,10 +2351,10 @@ export default function InputPage() {
             type="button"
             disabled={(completedCount !== 8 || isGenerating) && !pendingOutput}
             onClick={pendingOutput ? handleConfirmAndViewReport : handleGenerateReport}
-            className={`w-full rounded-lg px-4 py-3 text-sm font-semibold text-white ${
+            className={`w-full rounded-[3px] px-4 py-3 text-sm font-semibold ${
               (completedCount === 8 || Boolean(pendingOutput)) && !isGenerating
-                ? "bg-accent-blue hover:bg-blue-600"
-                : "cursor-not-allowed bg-text-muted"
+                ? "bg-ink text-cream hover:bg-black"
+                : "cursor-not-allowed bg-text-muted text-cream"
             }`}
           >
             {pendingOutput

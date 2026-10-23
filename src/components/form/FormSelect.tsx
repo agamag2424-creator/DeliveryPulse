@@ -1,3 +1,6 @@
+// Design Alignment: form field grammar matched to ChisokuLabs (.form-field).
+// Report slides remain Phase 1 frozen until explicit unfreeze.
+
 "use client";
 
 interface SelectOption {
@@ -26,14 +29,14 @@ export function FormSelect({
 }: FormSelectProps) {
   return (
     <div className="flex flex-col gap-2">
-      <label className="text-sm font-medium text-text-primary" htmlFor={id}>
+      <label className="text-sm font-medium text-ink" htmlFor={id}>
         {label}
         {mandatory ? <span className="ml-1 text-rag-red">*</span> : null}
       </label>
       <select
         id={id}
-        className={`appearance-none rounded-lg border bg-background-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-blue ${
-          error ? "border-rag-red" : "border-border"
+        className={`appearance-none rounded-[3px] border bg-paper px-4 py-2.5 text-sm text-ink outline-none focus:border-cyan ${
+          error ? "border-rag-red" : "border-line"
         } ${className ?? ""}`}
         {...props}
       >

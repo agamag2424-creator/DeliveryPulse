@@ -1,16 +1,33 @@
+/* Design tokens aligned to ChisokuLabs (chisokulabs.com).
+   Phase 1 freeze lifted for tokens + app chrome only (Design Alignment plan).
+   Report slides remain frozen until explicit unfreeze. */
+
 @config "../../tailwind.config.ts";
 @import "tailwindcss";
 
 :root {
-  --background: #0a0f1c;
-  --foreground: #f9fafb;
+  --color-page: #f5f4f0;
+  --color-paper: #fbfaf7;
+  --color-ink: #111820;
+  --color-charcoal: #1a222c;
+  --color-muted: #5f6a75;
+  --color-faint: #e6e4de;
+  --color-line: #d4d1c9;
+  --color-cyan: #00a6c8;
+  --color-cyan-strong: #007f9c;
+  --color-gold: #a8925f;
+  --color-cream: #fffdf8;
+
+  --background: var(--color-page);
+  --foreground: var(--color-ink);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-jetbrains-mono);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
 }
 
 * {
@@ -19,9 +36,27 @@
 
 body {
   margin: 0;
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-inter), sans-serif;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 84% 6%, rgba(0, 166, 200, 0.07), transparent 30%),
+    linear-gradient(180deg, #f8f7f4 0%, var(--color-page) 52%, #eceae4 100%);
+  color: var(--color-ink);
+  font-family: var(--font-body), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-feature-settings: "ss01" on, "kern" on;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(0, 166, 200, 0.18);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 3px solid rgba(0, 166, 200, 0.34);
+  outline-offset: 3px;
 }
 
 *::-webkit-scrollbar {
@@ -30,15 +65,15 @@ body {
 }
 
 *::-webkit-scrollbar-track {
-  background: #111827;
+  background: var(--color-faint);
 }
 
 *::-webkit-scrollbar-thumb {
   border-radius: 9999px;
-  border: 2px solid #111827;
-  background: #374151;
+  border: 2px solid var(--color-faint);
+  background: var(--color-line);
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: #4b5563;
+  background: var(--color-muted);
 }

@@ -1,0 +1,50 @@
+/* PHASE 1 FROZEN — DO NOT MODIFY WITHOUT EXPLICIT WRITTEN INSTRUCTION FROM AGAM
+   This file is part of the Phase 1 foundation and contains deliberate design decisions.
+   Phase 2 extends this file only where absolutely necessary.
+   Permitted Phase 2 additions: auth session check at route level, saveReport() call after generation.
+   Everything else: unchanged. */
+
+@media print {
+  /* Hide everything except the slides container */
+  body > *:not(#print-root) {
+    display: none !important;
+  }
+
+  #print-root {
+    display: block !important;
+  }
+
+  /* Remove screen-only UI chrome */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Each slide on its own page */
+  .slide-page {
+    page-break-after: always;
+    break-after: page;
+    width: 297mm;
+    height: 210mm;
+    overflow: hidden;
+    position: relative;
+    box-sizing: border-box;
+  }
+
+  /* Last slide — no trailing blank page */
+  .slide-page:last-child {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  /* Force background colours to print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+}

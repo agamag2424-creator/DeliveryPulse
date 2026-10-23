@@ -1,3 +1,9 @@
+// PHASE 1 FROZEN — DO NOT MODIFY WITHOUT EXPLICIT WRITTEN INSTRUCTION FROM AGAM
+// This file is part of the Phase 1 foundation and contains deliberate design decisions.
+// Phase 2 extends this file only where absolutely necessary.
+// Permitted Phase 2 additions: auth session check at route level, saveReport() call after generation.
+// Everything else: unchanged.
+
 "use client";
 
 import { Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -51,8 +57,8 @@ export function CapacityChart({ rows }: CapacityChartProps) {
             <XAxis dataKey="name" tick={{ fill: "#9CA3AF", fontSize: 11 }} />
             <YAxis domain={[0, maxPlanned + 1]} allowDecimals={false} tick={{ fill: "#9CA3AF", fontSize: 11 }} />
             <Tooltip
-              formatter={(value: number, name: string, entry) => [
-                name === "planned" ? `Planned ${value}` : `Actual ${value}`,
+              formatter={(value, name, entry) => [
+                `${String(name).toLowerCase() === "planned" ? "Planned" : "Actual"} ${Number(value ?? 0)}`,
                 (entry.payload as { fullName: string }).fullName,
               ]}
               contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }}

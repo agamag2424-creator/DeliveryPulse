@@ -1,3 +1,9 @@
+// PHASE 1 FROZEN — DO NOT MODIFY WITHOUT EXPLICIT WRITTEN INSTRUCTION FROM AGAM
+// This file is part of the Phase 1 foundation and contains deliberate design decisions.
+// Phase 2 extends this file only where absolutely necessary.
+// Permitted Phase 2 additions: auth session check at route level, saveReport() call after generation.
+// Everything else: unchanged.
+
 "use client";
 
 import Link from "next/link";
@@ -12,13 +18,11 @@ import { Slide4 } from "@/components/slides/Slide4";
 import { Slide5 } from "@/components/slides/Slide5";
 import { Slide6 } from "@/components/slides/Slide6";
 import { useReportContext } from "@/context/ReportContext";
-import { exportReportPDF } from "@/lib/exportPDF";
 
 export default function ReportPage() {
   const router = useRouter();
   const { hasGeneratedInput, reportInput, reportOutput, setReportOutput } = useReportContext();
   const [isPresenting, setIsPresenting] = useState(false);
-  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   useEffect(() => {
     if (!hasGeneratedInput) {
@@ -67,14 +71,14 @@ export default function ReportPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background-primary px-4 py-6 md:px-6 md:py-8">
-      <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-4 rounded-xl border border-border bg-background-card p-4 md:p-6">
-        <h1 className="text-2xl font-semibold text-text-primary">Report</h1>
-        <p className="text-sm text-text-secondary">
+    <main id="print-root" className="min-h-screen bg-background-primary px-4 py-6 md:px-6 md:py-8">
+      <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-4 rounded-panel border border-border bg-background-card p-4 md:p-6">
+        <h1 className="no-print text-2xl font-semibold text-text-primary">Report</h1>
+        <p className="no-print text-sm text-text-secondary">
           Report and presentation page shell for upcoming slides.
         </p>
         {reportOutput ? (
-          <div className="rounded-lg border border-border bg-background-elevated p-4">
+          <div className="no-print rounded-lg border border-border bg-background-elevated p-4">
             <p className="text-sm font-semibold text-text-primary">
               Loaded AI output: {reportOutput.rag_status} ({reportOutput.rag_reason})
             </p>
@@ -83,36 +87,16 @@ export default function ReportPage() {
           <p className="text-sm text-rag-amber">Report output not available yet.</p>
         )}
         {reportOutput ? <div id="report-slides-root" className="space-y-4">{slides}</div> : null}
-        <div className="flex items-center gap-3">
+        <div className="no-print flex items-center gap-3">
           <button
             type="button"
             onClick={() => setIsPresenting(true)}
-            className="rounded-lg border border-accent-blue bg-accent-blue/20 px-4 py-2 text-sm font-semibold text-accent-blue hover:bg-accent-blue/30"
+            className="rounded-[3px] border border-cyan bg-cyan/10 px-4 py-2 text-sm font-semibold text-cyan-strong hover:bg-cyan/20"
           >
             ▶ Present
           </button>
-          <button
-            type="button"
-            disabled={isExportingPdf || !reportOutput}
-            onClick={async () => {
-              if (!reportOutput) return;
-              try {
-                setIsExportingPdf(true);
-                await exportReportPDF({
-                  projectName: reportInput.projectData.projectName,
-                  reportingPeriodFrom: reportInput.projectData.reportingPeriodFrom,
-                  reportingPeriodTo: reportInput.projectData.reportingPeriodTo,
-                });
-              } finally {
-                setIsExportingPdf(false);
-              }
-            }}
-            className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-text-primary hover:bg-background-elevated disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isExportingPdf ? "Generating PDF..." : "⬇ Export PDF"}
-          </button>
           <Link
-            className="w-fit rounded-lg border border-border px-4 py-2 text-sm text-text-primary hover:bg-background-elevated"
+            className="w-fit rounded-[3px] border border-ink px-4 py-2 text-sm font-semibold text-ink hover:bg-faint"
             href="/input"
           >
             Back to Input

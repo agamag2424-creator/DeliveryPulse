@@ -1,3 +1,9 @@
+// PHASE 1 FROZEN — DO NOT MODIFY WITHOUT EXPLICIT WRITTEN INSTRUCTION FROM AGAM
+// This file is part of the Phase 1 foundation and contains deliberate design decisions.
+// Phase 2 extends this file only where absolutely necessary.
+// Permitted Phase 2 additions: auth session check at route level, saveReport() call after generation.
+// Everything else: unchanged.
+
 "use client";
 
 import {
@@ -70,10 +76,10 @@ function BurnRateChart({
           <XAxis dataKey="weekLabel" tick={{ fill: "#9CA3AF", fontSize: 11 }} />
           <YAxis tickFormatter={formatCurrencyK} tick={{ fill: "#9CA3AF", fontSize: 11 }} />
           <Tooltip
-            formatter={(value: number, key) =>
-              key === "actual"
-                ? `Actual ${formatCurrency(currency, value)}`
-                : `Planned ${formatCurrency(currency, value)}`
+            formatter={(value, key) =>
+              String(key) === "actual"
+                ? `Actual ${formatCurrency(currency, Number(value ?? 0))}`
+                : `Planned ${formatCurrency(currency, Number(value ?? 0))}`
             }
             labelFormatter={(label) => `${label}`}
             contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }}
@@ -192,7 +198,9 @@ function EacTrendChart({
           <XAxis dataKey="weekLabel" tick={{ fill: "#9CA3AF", fontSize: 11 }} />
           <YAxis tickFormatter={formatCurrencyK} tick={{ fill: "#9CA3AF", fontSize: 11 }} />
           <Tooltip
-            formatter={(value: number) => `${engagementModel === "TNM" ? "EAC" : "Forecast"} ${formatCurrency(currency, value)}`}
+            formatter={(value) =>
+              `${engagementModel === "TNM" ? "EAC" : "Forecast"} ${formatCurrency(currency, Number(value ?? 0))}`
+            }
             labelFormatter={(label) => `${label}`}
             contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }}
           />
